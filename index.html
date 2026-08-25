@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#12213A" />
+<title>NoteKeep — Personal Notes</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icons/icon-192.png" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+<meta name="description" content="A PIN-locked, encrypted personal notes folder that works offline." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,560;9..144,650&family=IBM+Plex+Mono:wght@400;500;600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink: #12213A; --ink-deep: #0C1830; --paper: #EDE6D6; --paper-dim: #E1D8C3;
+    --brass: #B8863B; --brass-bright: #D3A257; --teal: #3E7C7C; --rust: #A63D40;
+    --line: rgba(237,230,214,0.14); --line-strong: rgba(237,230,214,0.28);
+    --text-on-ink: #EDE6D6; --text-on-ink-dim: rgba(237,230,214,0.62);
+    --text-on-paper: #1B1F2A; --text-on-paper-dim: rgba(27,31,42,0.62);
+    --radius: 10px;
+    --mono: 'IBM Plex Mono', ui-monospace, monospace;
+    --display: 'Fraunces', Georgia, serif;
+    --sans: 'Public Sans', -apple-system, sans-serif;
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; height:100%; }
+  body{
+    background: linear-gradient(180deg, var(--ink) 0%, var(--ink-deep) 100%);
+    background-attachment: fixed; color: var(--text-on-ink); font-family: var(--sans);
+    min-height: 100vh; -webkit-font-smoothing: antialiased;
+  }
+  body::before{
+    content:""; position: fixed; inset:0;
+    background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 34px 34px; opacity: 0.35; pointer-events: none; z-index: 0;
+  }
+  .wrap{ position: relative; z-index:1; max-width: 720px; margin: 0 auto; padding: 28px 18px 80px; }
+  .wrap.narrow{ max-width: 420px; padding-top: 60px; }
+
+  header.hero{ padding: 18px 4px 30px; border-bottom: 1px solid var(--line-strong); margin-bottom: 28px; }
+  .eyebrow{ font-family: var(--mono); font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--brass-bright); display:flex; align-items:center; gap:10px; margin-bottom: 14px; }
+  .eyebrow .dot{ width:6px; height:6px; border-radius:50%; background: var(--brass-bright); }
+  h1{ font-family: var(--display); font-optical-sizing: auto; font-weight: 650; font-size: clamp(28px, 6vw, 44px); line-height: 1.04; margin: 0 0 12px; letter-spacing: -0.01em; }
+  h1 em{ font-style: italic; color: var(--brass-bright); }
+  .sub{ font-size: 14.5px; color: var(--text-on-ink-dim); max-width: 60ch; line-height: 1.55; margin: 0; }
+
+  .panel{ background: var(--paper); color: var(--text-on-paper); border-radius: var(--radius); padding: 22px; margin-bottom: 20px; box-shadow: 0 1px 0 rgba(0,0,0,0.2), 0 12px 30px -14px rgba(0,0,0,0.5); }
+  .panel-head{ display:flex; align-items:baseline; justify-content:space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+  .panel-title{ font-family: var(--display); font-weight: 650; font-size: 19px; margin:0; }
+
+  label{ font-family: var(--sans); font-weight: 600; font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-on-paper-dim); display:block; margin-bottom:6px; }
+  .field{ margin-bottom: 16px; }
+  .hint{ font-family: var(--sans); font-size: 12.5px; color: var(--text-on-paper-dim); margin-top: 6px; line-height:1.5; }
+
+  input[type="text"], input[type="password"], textarea{
+    width:100%; font-family: var(--mono); font-size: 15px; padding: 11px 13px; border-radius: 7px;
+    border: 1.5px solid var(--ink); background:#fff; color: var(--ink);
+  }
+  input[type="password"]{ letter-spacing: 0.3em; font-size: 20px; text-align:center; }
+  input:focus, textarea:focus{ outline:2px solid var(--brass); outline-offset:1px; }
+
+  .btn{ font-family: var(--sans); font-weight: 700; font-size: 13.5px; letter-spacing:0.01em; padding: 11px 18px; border-radius: 7px; border: 1.5px solid var(--ink); background: var(--ink); color: var(--paper); cursor:pointer; transition: transform 0.08s ease, background 0.15s ease; width:100%; }
+  .btn:hover{ background:#000; }
+  .btn:active{ transform: translateY(1px); }
+  .btn.ghost{ background: transparent; color: var(--ink); }
+  .btn.ghost:hover{ background: rgba(18,33,58,0.08); }
+  .btn.brass{ background: var(--brass); border-color: var(--brass); color: #1B1F2A; }
+  .btn.brass:hover{ background: var(--brass-bright); }
+  .btn.rust{ background: transparent; border-color: var(--rust); color: var(--rust); }
+  .btn.rust:hover{ background: rgba(166,61,64,0.1); }
+  .btn.auto{ width:auto; }
+  .btn.small{ padding: 8px 14px; font-size: 12.5px; }
+  .btn:disabled{ opacity:0.45; cursor:not-allowed; }
+  .btn:focus-visible, input:focus-visible, textarea:focus-visible{ outline: 3px solid var(--brass); outline-offset: 2px; }
+
+  .status{ font-family: var(--mono); font-size: 13px; padding: 10px 14px; border-radius: 7px; margin-top:14px; }
+  .status.ok{ background: rgba(62,124,124,0.14); color: #24504f; border:1px solid rgba(62,124,124,0.4); }
+  .status.bad{ background: rgba(166,61,64,0.12); color: #7c2c2e; border:1px solid rgba(166,61,64,0.4); }
+
+  .link-btn{ background:none; border:none; color: var(--text-on-paper-dim); font-family: var(--sans); font-size: 12.5px; text-decoration: underline; cursor:pointer; padding: 0; margin-top: 14px; display:block; text-align:center; width:100%; }
+  .link-btn.rust{ color: var(--rust); }
+
+  /* App screen */
+  .app-bar{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom: 18px; flex-wrap:wrap; }
+  .app-bar h2{ font-family: var(--display); font-weight:650; font-size: 22px; margin:0; }
+  .app-bar .actions{ display:flex; gap:8px; }
+
+  .search-row{ margin-bottom: 14px; }
+
+  .note-list{ display:flex; flex-direction:column; gap:8px; }
+  .note-item{ background: var(--paper); border-radius: var(--radius); padding: 14px 16px; cursor:pointer; box-shadow: 0 1px 0 rgba(0,0,0,0.15), 0 6px 16px -10px rgba(0,0,0,0.5); }
+  .note-item:hover{ background: var(--paper-dim); }
+  .note-item .t{ font-family: var(--display); font-weight: 650; font-size: 16px; color: var(--text-on-paper); margin-bottom:4px; }
+  .note-item .s{ font-family: var(--sans); font-size: 12.5px; color: var(--text-on-paper-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .note-item .d{ font-family: var(--mono); font-size: 11px; color: var(--text-on-paper-dim); margin-top:6px; }
+
+  .empty-state{ text-align:center; padding: 40px 20px; color: var(--text-on-ink-dim); font-size: 14px; }
+
+  .fab{
+    position: fixed; right: 20px; bottom: 24px; z-index: 5;
+    width: 56px; height: 56px; border-radius: 50%; background: var(--brass); color:#1B1F2A;
+    border: none; font-size: 26px; font-weight:700; cursor:pointer; box-shadow: 0 10px 24px -8px rgba(0,0,0,0.6);
+  }
+  .fab:hover{ background: var(--brass-bright); }
+
+  .editor-back{ background:none; border:none; color: var(--text-on-ink-dim); font-family: var(--sans); font-weight:600; font-size: 13px; cursor:pointer; padding: 0 0 14px; display:flex; align-items:center; gap:6px; }
+  .editor-back:hover{ color: var(--text-on-ink); }
+
+  #editorTitle{ font-family: var(--display); font-size: 22px; font-weight:650; padding: 10px 12px; margin-bottom: 12px; }
+  #editorBody{ min-height: 260px; resize: vertical; line-height:1.6; }
+  .editor-meta{ display:flex; justify-content:space-between; align-items:center; margin-top: 10px; flex-wrap:wrap; gap:8px; }
+  .save-indicator{ font-family: var(--mono); font-size: 11.5px; color: var(--text-on-paper-dim); }
+
+  .changepin-form{ margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(18,33,58,0.14); }
+
+  [hidden]{ display:none !important; }
+
+  footer{ text-align:center; padding: 34px 10px 10px; color: var(--text-on-ink-dim); font-size:12px; font-family: var(--sans); line-height:1.7; }
+
+  .install-banner{ display:none; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; background: var(--brass); color:#1B1F2A; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; font-family: var(--sans); font-size: 13.5px; font-weight:600; }
+  .install-banner.show{ display:flex; }
+  .install-banner .btn{ width:auto; padding: 8px 14px; font-size:12.5px; }
+
+  @media (prefers-reduced-motion: reduce){ *{ transition:none !important; } }
+</style>
+</head>
+<body>
+
+<!-- ============ SETUP SCREEN ============ -->
+<div class="wrap narrow" id="setupScreen" hidden>
+  <header class="hero" style="text-align:center; border-bottom:none;">
+    <div class="eyebrow" style="justify-content:center;"><span class="dot"></span>AES-256-GCM · LOCAL ONLY</div>
+    <h1>Note<em>Keep</em></h1>
+    <p class="sub" style="margin:0 auto;">Set a PIN to create your personal notes folder. Everything is encrypted with a key derived from this PIN and never leaves this device.</p>
+  </header>
+  <section class="panel">
+    <div class="field">
+      <label for="setupPin">Choose a PIN (4–8 digits)</label>
+      <input type="password" id="setupPin" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off" />
+    </div>
+    <div class="field">
+      <label for="setupPinConfirm">Confirm PIN</label>
+      <input type="password" id="setupPinConfirm" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off" />
+    </div>
+    <button class="btn brass" id="setupBtn" type="button">Create PIN &amp; continue</button>
+    <div id="setupStatus"></div>
+    <div class="hint" style="text-align:center; margin-top:16px;">There is no PIN recovery. If you forget it, your notes can only be erased, not read.</div>
+  </section>
+</div>
+
+<!-- ============ LOCK SCREEN ============ -->
+<div class="wrap narrow" id="lockScreen" hidden>
+  <header class="hero" style="text-align:center; border-bottom:none;">
+    <div class="eyebrow" style="justify-content:center;"><span class="dot"></span>LOCKED</div>
+    <h1>Note<em>Keep</em></h1>
+    <p class="sub" style="margin:0 auto;">Enter your PIN to unlock your notes.</p>
+  </header>
+  <section class="panel">
+    <div class="field">
+      <label for="unlockPin">PIN</label>
+      <input type="password" id="unlockPin" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off" />
+    </div>
+    <button class="btn brass" id="unlockBtn" type="button">Unlock →</button>
+    <div id="unlockStatus"></div>
+    <button class="link-btn rust" id="forgotBtn" type="button">Forgot PIN? Erase all notes</button>
+  </section>
+</div>
+
+<!-- ============ APP SCREEN ============ -->
+<div class="wrap" id="appScreen" hidden>
+
+  <div class="install-banner" id="installBanner">
+    <span>Install this as an app for offline use.</span>
+    <button class="btn" id="installBtn">Install</button>
+  </div>
+
+  <!-- LIST VIEW -->
+  <div id="listView">
+    <div class="app-bar">
+      <h2>Your notes</h2>
+      <div class="actions">
+        <button class="btn ghost small auto" id="changePinToggleBtn" type="button">Change PIN</button>
+        <button class="btn ghost small auto" id="lockBtn" type="button">Lock</button>
+      </div>
+    </div>
+
+    <div id="changePinPanel" class="panel" hidden>
+      <div class="panel-head"><h3 class="panel-title">Change PIN</h3></div>
+      <div class="field"><label for="cpOld">Current PIN</label><input type="password" id="cpOld" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off"></div>
+      <div class="field"><label for="cpNew">New PIN (4–8 digits)</label><input type="password" id="cpNew" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off"></div>
+      <div class="field"><label for="cpNewConfirm">Confirm new PIN</label><input type="password" id="cpNewConfirm" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off"></div>
+      <button class="btn brass" id="cpSaveBtn" type="button">Save new PIN</button>
+      <button class="btn ghost" id="cpCancelBtn" type="button" style="margin-top:8px;">Cancel</button>
+      <div id="cpStatus"></div>
+    </div>
+
+    <div class="search-row">
+      <input type="text" id="searchInput" placeholder="Search notes…" />
+    </div>
+
+    <div class="note-list" id="noteList"></div>
+    <div class="empty-state" id="emptyState" hidden>No notes yet — tap + to add one.</div>
+  </div>
+
+  <!-- EDITOR VIEW -->
+  <div id="editorView" hidden>
+    <button class="editor-back" id="backBtn" type="button">← All notes</button>
+    <section class="panel">
+      <input type="text" id="editorTitle" placeholder="Title" />
+      <textarea id="editorBody" placeholder="Write your note…"></textarea>
+      <div class="editor-meta">
+        <span class="save-indicator" id="saveIndicator"></span>
+        <button class="btn rust auto small" id="deleteBtn" type="button">Delete note</button>
+      </div>
+    </section>
+  </div>
+
+  <button class="fab" id="newNoteBtn" type="button" title="New note" aria-label="New note">+</button>
+
+  <footer>
+    Notes are encrypted on this device with AES-256-GCM, key-derived from your PIN via PBKDF2. Nothing is uploaded anywhere.<br>
+    Works offline once installed.
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ================= Storage keys =================
+  const META_KEY = "notekeep:meta";
+  const NOTES_KEY = "notekeep:notes";
+  const PBKDF2_ITERATIONS = 200000;
+  const IDLE_LOCK_MS = 3 * 60 * 1000; // auto-lock after 3 min idle
+
+  // ================= DOM refs =================
+  const setupScreen = document.getElementById("setupScreen");
+  const lockScreen = document.getElementById("lockScreen");
+  const appScreen = document.getElementById("appScreen");
+  const listView = document.getElementById("listView");
+  const editorView = document.getElementById("editorView");
+
+  // ================= Crypto helpers =================
+  function bufToB64(buf){
+    const bytes = new Uint8Array(buf);
+    let bin = "";
+    for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin);
+  }
+  function b64ToBuf(b64){
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes.buffer;
+  }
+
+  async function deriveKey(pin, saltB64, iterations){
+    const salt = b64ToBuf(saltB64);
+    const enc = new TextEncoder();
+    const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(pin), { name: "PBKDF2" }, false, ["deriveKey"]);
+    return crypto.subtle.deriveKey(
+      { name: "PBKDF2", salt, iterations, hash: "SHA-256" },
+      keyMaterial,
+      { name: "AES-GCM", length: 256 },
+      false,
+      ["encrypt", "decrypt"]
+    );
+  }
+
+  async function encryptJSON(key, obj){
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const enc = new TextEncoder();
+    const data = enc.encode(JSON.stringify(obj));
+    const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, data);
+    return { iv: bufToB64(iv), ct: bufToB64(ct) };
+  }
+
+  async function decryptJSON(key, payload){
+    const iv = new Uint8Array(b64ToBuf(payload.iv));
+    const ct = b64ToBuf(payload.ct);
+    const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ct);
+    const dec = new TextDecoder();
+    return JSON.parse(dec.decode(pt));
+  }
+
+  function randomSaltB64(){
+    return bufToB64(crypto.getRandomValues(new Uint8Array(16)));
+  }
+
+  // ================= App state =================
+  let sessionKey = null;      // in-memory only, cleared on lock
+  let notes = [];             // decrypted: [{id, title, body, updatedAt}]
+  let currentNoteId = null;
+  let idleTimer = null;
+  let saveDebounce = null;
+
+  function loadMeta(){
+    const raw = localStorage.getItem(META_KEY);
+    return raw ? JSON.parse(raw) : null;
+  }
+  function saveMeta(meta){
+    localStorage.setItem(META_KEY, JSON.stringify(meta));
+  }
+  function loadRawNotes(){
+    const raw = localStorage.getItem(NOTES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }
+  function saveRawNotes(rawNotes){
+    localStorage.setItem(NOTES_KEY, JSON.stringify(rawNotes));
+  }
+
+  function showScreen(name){
+    setupScreen.hidden = name !== "setup";
+    lockScreen.hidden = name !== "lock";
+    appScreen.hidden = name !== "app";
+  }
+
+  // ================= Screen routing on load =================
+  function route(){
+    if (!("crypto" in window) || !window.crypto.subtle){
+      document.body.innerHTML = '<div class="wrap narrow"><section class="panel"><h2 class="panel-title">Encryption unavailable</h2><p>This browser context does not expose the Web Crypto API needed to encrypt your notes (this can happen when opening the file directly with certain browsers). Try installing the app, or opening it via a local server / https.</p></section></div>';
+      return;
+    }
+    const meta = loadMeta();
+    if (!meta){
+      showScreen("setup");
+    } else {
+      showScreen("lock");
+    }
+  }
+
+  // ================= Setup flow =================
+  document.getElementById("setupBtn").addEventListener("click", async () => {
+    const pin = document.getElementById("setupPin").value;
+    const confirm = document.getElementById("setupPinConfirm").value;
+    const statusEl = document.getElementById("setupStatus");
+
+    if (!/^\d{4,8}$/.test(pin)){
+      statusEl.innerHTML = '<div class="status bad">PIN must be 4–8 digits.</div>';
+      return;
+    }
+    if (pin !== confirm){
+      statusEl.innerHTML = '<div class="status bad">PINs do not match.</div>';
+      return;
+    }
+
+    const salt = randomSaltB64();
+    const key = await deriveKey(pin, salt, PBKDF2_ITERATIONS);
+    const verifier = await encryptJSON(key, { check: "notekeep-ok" });
+    saveMeta({ salt, iterations: PBKDF2_ITERATIONS, verifier });
+    saveRawNotes([]);
+
+    sessionKey = key;
+    notes = [];
+    statusEl.innerHTML = '<div class="status ok">✓ PIN created.</div>';
+    enterApp();
+  });
+
+  // ================= Unlock flow =================
+  document.getElementById("unlockBtn").addEventListener("click", attemptUnlock);
+  document.getElementById("unlockPin").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") attemptUnlock();
+  });
+
+  async function attemptUnlock(){
+    const pin = document.getElementById("unlockPin").value;
+    const statusEl = document.getElementById("unlockStatus");
+    const meta = loadMeta();
+    if (!meta){ route(); return; }
+
+    try {
+      const key = await deriveKey(pin, meta.salt, meta.iterations);
+      await decryptJSON(key, meta.verifier); // throws if wrong PIN
+      sessionKey = key;
+      const rawNotes = loadRawNotes();
+      notes = [];
+      for (const rn of rawNotes){
+        try {
+          const dec = await decryptJSON(sessionKey, rn.payload);
+          notes.push({ id: rn.id, title: dec.title, body: dec.body, updatedAt: rn.updatedAt });
+        } catch(e){ /* skip unreadable note */ }
+      }
+      document.getElementById("unlockPin").value = "";
+      statusEl.innerHTML = "";
+      enterApp();
+    } catch(e){
+      statusEl.innerHTML = '<div class="status bad">Incorrect PIN.</div>';
+    }
+  }
+
+  document.getElementById("forgotBtn").addEventListener("click", () => {
+    const ok = window.confirm("This permanently erases all notes on this device — there is no way to recover them without the PIN. Continue?");
+    if (!ok) return;
+    localStorage.removeItem(META_KEY);
+    localStorage.removeItem(NOTES_KEY);
+    document.getElementById("unlockPin").value = "";
+    route();
+  });
+
+  // ================= Enter app / idle lock =================
+  function enterApp(){
+    showScreen("app");
+    showList();
+    renderNoteList();
+    resetIdleTimer();
+  }
+
+  function lockApp(){
+    sessionKey = null;
+    notes = [];
+    currentNoteId = null;
+    clearTimeout(idleTimer);
+    route();
+  }
+
+  function resetIdleTimer(){
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(lockApp, IDLE_LOCK_MS);
+  }
+  ["mousemove", "keydown", "touchstart", "click"].forEach(evt => {
+    document.addEventListener(evt, () => { if (sessionKey) resetIdleTimer(); });
+  });
+
+  document.getElementById("lockBtn").addEventListener("click", lockApp);
+
+  // ================= List view =================
+  function showList(){
+    listView.hidden = false;
+    editorView.hidden = true;
+  }
+  function showEditor(){
+    listView.hidden = true;
+    editorView.hidden = false;
+  }
+
+  function timeAgo(ts){
+    const diff = Date.now() - ts;
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return mins + "m ago";
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return hrs + "h ago";
+    const days = Math.floor(hrs / 24);
+    if (days < 30) return days + "d ago";
+    return new Date(ts).toLocaleDateString();
+  }
+
+  function renderNoteList(){
+    const q = (document.getElementById("searchInput").value || "").toLowerCase().trim();
+    const listEl = document.getElementById("noteList");
+    const emptyEl = document.getElementById("emptyState");
+
+    let filtered = notes.filter(n => !q || n.title.toLowerCase().includes(q) || n.body.toLowerCase().includes(q));
+    filtered = filtered.slice().sort((a, b) => b.updatedAt - a.updatedAt);
+
+    if (filtered.length === 0){
+      listEl.innerHTML = "";
+      emptyEl.hidden = false;
+      emptyEl.textContent = notes.length === 0 ? "No notes yet — tap + to add one." : "No notes match your search.";
+      return;
+    }
+    emptyEl.hidden = true;
+
+    listEl.innerHTML = filtered.map(n => {
+      const title = escapeHtml(n.title || "Untitled");
+      const snippet = escapeHtml((n.body || "").replace(/\s+/g, " ").trim().slice(0, 90));
+      return `<div class="note-item" data-id="${n.id}">
+        <div class="t">${title}</div>
+        <div class="s">${snippet}</div>
+        <div class="d">${timeAgo(n.updatedAt)}</div>
+      </div>`;
+    }).join("");
+
+    listEl.querySelectorAll(".note-item").forEach(el => {
+      el.addEventListener("click", () => openNote(el.dataset.id));
+    });
+  }
+
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+  }
+
+  document.getElementById("searchInput").addEventListener("input", renderNoteList);
+
+  // ================= Editor =================
+  function openNote(id){
+    const note = notes.find(n => n.id === id);
+    if (!note) return;
+    currentNoteId = id;
+    document.getElementById("editorTitle").value = note.title;
+    document.getElementById("editorBody").value = note.body;
+    document.getElementById("saveIndicator").textContent = "Saved " + timeAgo(note.updatedAt);
+    showEditor();
+  }
+
+  document.getElementById("newNoteBtn").addEventListener("click", () => {
+    const id = "n" + Date.now() + Math.random().toString(36).slice(2, 8);
+    const note = { id, title: "", body: "", updatedAt: Date.now() };
+    notes.push(note);
+    currentNoteId = id;
+    document.getElementById("editorTitle").value = "";
+    document.getElementById("editorBody").value = "";
+    document.getElementById("saveIndicator").textContent = "";
+    showEditor();
+    document.getElementById("editorTitle").focus();
+  });
+
+  document.getElementById("backBtn").addEventListener("click", async () => {
+    await flushSave();
+    // drop empty untitled notes with no content
+    notes = notes.filter(n => n.title.trim() || n.body.trim());
+    await persistAllNotes();
+    currentNoteId = null;
+    showList();
+    renderNoteList();
+  });
+
+  function scheduleSave(){
+    document.getElementById("saveIndicator").textContent = "Saving…";
+    clearTimeout(saveDebounce);
+    saveDebounce = setTimeout(flushSave, 500);
+  }
+
+  async function flushSave(){
+    if (!currentNoteId || !sessionKey) return;
+    const note = notes.find(n => n.id === currentNoteId);
+    if (!note) return;
+    note.title = document.getElementById("editorTitle").value;
+    note.body = document.getElementById("editorBody").value;
+    note.updatedAt = Date.now();
+    await persistAllNotes();
+    document.getElementById("saveIndicator").textContent = "Saved " + timeAgo(note.updatedAt);
+  }
+
+  document.getElementById("editorTitle").addEventListener("input", scheduleSave);
+  document.getElementById("editorBody").addEventListener("input", scheduleSave);
+
+  async function persistAllNotes(){
+    if (!sessionKey) return;
+    const rawNotes = [];
+    for (const n of notes){
+      const payload = await encryptJSON(sessionKey, { title: n.title, body: n.body });
+      rawNotes.push({ id: n.id, updatedAt: n.updatedAt, payload });
+    }
+    saveRawNotes(rawNotes);
+  }
+
+  document.getElementById("deleteBtn").addEventListener("click", async () => {
+    if (!currentNoteId) return;
+    const ok = window.confirm("Delete this note? This can't be undone.");
+    if (!ok) return;
+    clearTimeout(saveDebounce);
+    notes = notes.filter(n => n.id !== currentNoteId);
+    await persistAllNotes();
+    currentNoteId = null;
+    showList();
+    renderNoteList();
+  });
+
+  // ================= Change PIN =================
+  const changePinPanel = document.getElementById("changePinPanel");
+  document.getElementById("changePinToggleBtn").addEventListener("click", () => {
+    changePinPanel.hidden = !changePinPanel.hidden;
+  });
+  document.getElementById("cpCancelBtn").addEventListener("click", () => {
+    changePinPanel.hidden = true;
+    document.getElementById("cpOld").value = "";
+    document.getElementById("cpNew").value = "";
+    document.getElementById("cpNewConfirm").value = "";
+    document.getElementById("cpStatus").innerHTML = "";
+  });
+
+  document.getElementById("cpSaveBtn").addEventListener("click", async () => {
+    const oldPin = document.getElementById("cpOld").value;
+    const newPin = document.getElementById("cpNew").value;
+    const newPinConfirm = document.getElementById("cpNewConfirm").value;
+    const statusEl = document.getElementById("cpStatus");
+    const meta = loadMeta();
+
+    try {
+      const oldKey = await deriveKey(oldPin, meta.salt, meta.iterations);
+      await decryptJSON(oldKey, meta.verifier);
+    } catch(e){
+      statusEl.innerHTML = '<div class="status bad">Current PIN is incorrect.</div>';
+      return;
+    }
+    if (!/^\d{4,8}$/.test(newPin)){
+      statusEl.innerHTML = '<div class="status bad">New PIN must be 4–8 digits.</div>';
+      return;
+    }
+    if (newPin !== newPinConfirm){
+      statusEl.innerHTML = '<div class="status bad">New PINs do not match.</div>';
+      return;
+    }
+
+    const newSalt = randomSaltB64();
+    const newKey = await deriveKey(newPin, newSalt, PBKDF2_ITERATIONS);
+    const newVerifier = await encryptJSON(newKey, { check: "notekeep-ok" });
+    saveMeta({ salt: newSalt, iterations: PBKDF2_ITERATIONS, verifier: newVerifier });
+
+    sessionKey = newKey;
+    await persistAllNotes();
+
+    statusEl.innerHTML = '<div class="status ok">✓ PIN changed.</div>';
+    document.getElementById("cpOld").value = "";
+    document.getElementById("cpNew").value = "";
+    document.getElementById("cpNewConfirm").value = "";
+    setTimeout(() => { changePinPanel.hidden = true; statusEl.innerHTML = ""; }, 1200);
+  });
+
+  // ================= Init =================
+  route();
+
+  // ---------- PWA install prompt ----------
+  let deferredPrompt = null;
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    const banner = document.getElementById("installBanner");
+    if (banner) banner.classList.add("show");
+  });
+  document.addEventListener("click", async (e) => {
+    if (e.target && e.target.id === "installBtn"){
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      document.getElementById("installBanner").classList.remove("show");
+    }
+  });
+  window.addEventListener("appinstalled", () => {
+    const banner = document.getElementById("installBanner");
+    if (banner) banner.classList.remove("show");
+  });
+
+  // ---------- Service worker ----------
+  if ("serviceWorker" in navigator){
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").catch(() => {});
+    });
+  }
+})();
+</script>
+</body>
+</html>
